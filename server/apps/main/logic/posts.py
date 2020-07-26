@@ -1,8 +1,12 @@
+import logging
 import typing
 
 import typing_extensions
 
 from server.apps.main import models
+from server.apps.main.logic import client_hackernews
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_OFFSET: typing_extensions.Final = 0
 DEFAULT_ORDER: typing_extensions.Final = '-created'
@@ -78,3 +82,20 @@ def get_posts(
     posts = models.HackernewsPost.objects.all()
     posts = posts.order_by(order)[offset:offset + limit]
     return list(posts)
+
+
+def save_posts() -> bool:
+    """Save posts from hackernews.
+
+    Returns True if success, False if failed.
+    """
+    try:
+        parsed_posts = client_hackernews.get_posts()
+    except client_hackernews.HackernewsError as exc:
+        logger.error('save posts failed: %s', exc)
+        return False
+    posts = []
+    for post in parsed_posts:
+        posts.append(models.HackernewsPost(url=post.url, title=post.title))
+    models.HackernewsPost.objects.bulk_create(posts)
+    return True

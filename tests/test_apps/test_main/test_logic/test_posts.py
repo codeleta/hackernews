@@ -3,6 +3,7 @@ from typing import Optional
 import pytest
 
 from server.apps.main import models
+from server.apps.main.logic import client_hackernews
 from server.apps.main.logic import posts
 
 
@@ -77,3 +78,23 @@ def test_get_posts_offset_empty(db):
     """This test ensures that offset bigger than objects return nothing."""
     test_posts = posts.get_posts(order='id', limit=1, offset=50)
     assert not test_posts
+
+
+def test_save_posts_success(db, monkeypatch):
+    """This test ensures that save posts works."""
+    def mocked_get_posts():
+        return [client_hackernews.Post(url='url', title='title')]
+    monkeypatch.setattr(client_hackernews, 'get_posts', mocked_get_posts)
+    posts_count = models.HackernewsPost.objects.count()
+    saved = posts.save_posts()
+    assert saved
+    assert models.HackernewsPost.objects.count() == posts_count + 1
+
+
+def test_save_posts_failed(db, monkeypatch):
+    """This test ensures that save posts works."""
+    def mocked_get_posts():
+        raise client_hackernews.HackernewsParseError
+    monkeypatch.setattr(client_hackernews, 'get_posts', mocked_get_posts)
+    saved = posts.save_posts()
+    assert not saved
