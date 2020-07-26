@@ -15,6 +15,7 @@ You will need:
 
 - `python3.8` (see `pyproject.toml` for full version)
 - `postgresql` with version `9.6`
+- `redis`
 - `docker` with [version at least](https://docs.docker.com/compose/compose-file/#compose-and-docker-compatibility-matrix) `18.02`
 
 

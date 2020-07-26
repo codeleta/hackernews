@@ -18,6 +18,14 @@ services:
       - webnet
     env_file: ./config/.env
 
+  redis:
+    image: "redis:6.0.6-alpine"
+    restart: always
+    volumes:
+      - redisdata:/data
+    networks:
+      - webnet
+
   web:
     <<: &web
       # Image name is changed in production:
@@ -59,6 +67,30 @@ services:
       retries: 5
       start_period: 30s
 
+  celery_worker:
+    <<: *web
+      command: sh -c "celery -A server worker -l info"
+      container_name: celery_worker
+      depends_on:
+        - db
+        - redis
+      restart: on-failure
+      environment:
+        DJANGO_DATABASE_HOST: db
+        REDIS_HOST: redis
+
+  celery_beat:
+    <<: *web
+      command: sh -c "celery -A server beat -l info"
+      container_name: celery_beat
+      depends_on:
+        - db
+        - redis
+      restart: on-failure
+      environment:
+        DJANGO_DATABASE_HOST: db
+        REDIS_HOST: redis
+
 # This task is an example of how to extend existing ones:
 # some_worker:
 #   <<: *web
@@ -73,6 +105,7 @@ networks:
 
 volumes:
   pgdata:
+  redisdata:
   django-static:
   django-media:
   django-locale:

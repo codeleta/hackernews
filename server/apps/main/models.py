@@ -17,6 +17,7 @@ class HackernewsPost(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta(object):
+        unique_together = [['title', 'url']]
         ordering = ('-created',)
         verbose_name = 'Hackernews post'
         verbose_name_plural = 'Hackernews posts'

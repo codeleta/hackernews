@@ -1,7 +1,11 @@
+import json
 import logging
 import typing
 
 import typing_extensions
+
+from django import db
+from django.utils import timezone
 
 from server.apps.main import models
 from server.apps.main.logic import client_hackernews
@@ -15,6 +19,24 @@ ALLOWED_ORDER_FIELDS: typing_extensions.Final = (
 )
 DEFAULT_LIMIT: typing_extensions.Final = 5
 MAX_LIMIT: typing_extensions.Final = 30
+RAW_INSERT_QUERY: typing_extensions.Final = """
+insert into
+    main_hackernewspost (url, title, created)
+select url, title, created from
+    json_populate_recordset(
+        NULL::main_hackernewspost,
+        %s
+    ) r
+where not exists (
+    select
+        1
+    from
+        main_hackernewspost h
+    where
+        h.url = r.url and
+        h.title = r.title
+)
+"""  # noqa: WPS323
 
 
 class ValidationError(Exception):
@@ -84,13 +106,28 @@ def get_posts(
     return list(posts)
 
 
+def _save_only_unique_posts(posts: typing.List[client_hackernews.Post]):
+    json_posts = []
+    for post in reversed(posts):
+        json_posts.append({
+            'url': post.url,
+            'title': post.title,
+            'created': timezone.now().isoformat(),
+        })
+    with db.connection.cursor() as cursor:
+        cursor.execute(
+            RAW_INSERT_QUERY,
+            [json.dumps(json_posts)],
+        )
+
+
 def save_posts() -> bool:
     """Save posts from hackernews.
 
     Returns True if success, False if failed.
     """
     try:
-        parsed_posts = client_hackernews.get_posts()
+        posts = client_hackernews.get_posts()
     except (
         client_hackernews.HackernewsRequestError,
         client_hackernews.HackernewsParseError,
@@ -98,8 +135,5 @@ def save_posts() -> bool:
         error_message = 'save posts failed: {0}'.format(str(exc))
         logger.error(error_message)
         return False
-    posts = []
-    for post in parsed_posts:
-        posts.append(models.HackernewsPost(url=post.url, title=post.title))
-    models.HackernewsPost.objects.bulk_create(posts)
+    _save_only_unique_posts(posts)
     return True

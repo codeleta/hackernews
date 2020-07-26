@@ -30,6 +30,7 @@ class Migration(migrations.Migration):
                 'ordering': ('-created',),
                 'verbose_name': 'Hackernews post',
                 'verbose_name_plural': 'Hackernews posts',
+                'unique_together': {('title', 'url')},
             },
         ),
     ]

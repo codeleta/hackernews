@@ -33,3 +33,17 @@ def test_save_posts_failed(db, monkeypatch):
     )
     saved = posts.save_posts()
     assert not saved
+
+
+def test_save_posts_only_unique(db, monkeypatch):
+    """This test ensures that save posts only unique works."""
+    monkeypatch.setattr(
+        client_hackernews,
+        'get_posts',
+        _mocked_get_posts_success,
+    )
+    posts.save_posts()
+    posts_count = models.HackernewsPost.objects.count()
+    saved = posts.save_posts()
+    assert saved
+    assert models.HackernewsPost.objects.count() == posts_count
