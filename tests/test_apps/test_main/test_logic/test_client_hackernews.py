@@ -5,6 +5,7 @@ from server.apps.main.logic import client_hackernews
 
 
 def test_get_posts_success():
+    """This test ensures that get posts works."""
     post_url = 'http://example.com'
     post_title = 'Title'
     with requests_mock.Mocker() as mocked_requests:
@@ -17,7 +18,8 @@ def test_get_posts_success():
     assert posts == expected_posts
 
 
-def test_get_posts_500():
+def test_get_posts_requests_error():
+    """This test ensures that requests error raises HackernewsRequestError."""
     with requests_mock.Mocker() as mocked_requests:
         mocked_requests.get(
             client_hackernews.HACKERNEWS_HOST,
@@ -29,6 +31,7 @@ def test_get_posts_500():
 
 
 def test_get_posts_not_found():
+    """This test ensures that parser error raises HackernewsParseError."""
     with requests_mock.Mocker() as mocked_requests:
         mocked_requests.get(
             client_hackernews.HACKERNEWS_HOST,

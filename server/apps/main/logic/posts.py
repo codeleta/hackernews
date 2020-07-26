@@ -91,8 +91,12 @@ def save_posts() -> bool:
     """
     try:
         parsed_posts = client_hackernews.get_posts()
-    except client_hackernews.HackernewsError as exc:
-        logger.error('save posts failed: %s', exc)
+    except (
+        client_hackernews.HackernewsRequestError,
+        client_hackernews.HackernewsParseError,
+    ) as exc:
+        error_message = 'save posts failed: {0}'.format(str(exc))
+        logger.error(error_message)
         return False
     posts = []
     for post in parsed_posts:

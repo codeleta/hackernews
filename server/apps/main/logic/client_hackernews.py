@@ -16,19 +16,16 @@ HACKERNEWS_HOST: typing_extensions.Final = 'https://news.ycombinator.com/'
 @dataclasses.dataclass
 class Post(object):
     """Post from hackernews site."""
+
     url: str
     title: str
 
 
-class HackernewsError(Exception):
-    """Common exception for hackernews client."""
-
-
-class HackernewsRequestError(HackernewsError):
+class HackernewsRequestError(Exception):
     """Raises when requests.get failed."""
 
 
-class HackernewsParseError(HackernewsError):
+class HackernewsParseError(Exception):
     """Raises when posts not found."""
 
 
@@ -37,7 +34,7 @@ def _requests_retry_session(
     backoff_factor=0.3,
     status_forcelist=(500, 502, 504),
     session=None,
-):
+) -> requests.Session:
     session = session or requests.Session()
     retry_policy = retry.Retry(
         total=retries,
@@ -57,12 +54,12 @@ def _get_index_page_text() -> str:
     try:
         hackernews_index_page.raise_for_status()
     except requests.HTTPError as exc:
-        logger.error(
-            'Request to %s failed with status %s: %s',
+        error_message = 'Request to {0} failed with status {1}: {2}'.format(
             HACKERNEWS_HOST,
             hackernews_index_page.status_code,
-            exc,
+            str(exc),
         )
+        logger.error(error_message)
         raise HackernewsRequestError(str(exc))
     return hackernews_index_page.text
 
